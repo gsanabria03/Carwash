@@ -1,27 +1,32 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
 import {
-getFirestore,
-collection,
-addDoc,
-getDocs,
-deleteDoc,
-doc
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+getDatabase,
+ref,
+push,
+onValue,
+remove
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 import { firebaseConfig } from "./firebase.js";
 
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const db = getDatabase(app);
 
-async function registrarVehiculo(){
+// REGISTRAR VEHICULO
+function registrarVehiculo(){
 
 let placa = document.getElementById("placa").value
 let lugar = document.getElementById("lugar").value
 let runner = document.getElementById("runner").value
 let hora = new Date().toLocaleString()
 
-await addDoc(collection(db,"vehiculos"),{
+if(!placa){
+alert("Ingrese una placa")
+return
+}
+
+push(ref(db,"vehiculos"),{
 placa,
 lugar,
 runner,
@@ -36,17 +41,22 @@ document.getElementById("placa").value=""
 
 window.registrarVehiculo = registrarVehiculo
 
-async function cargarDatos(){
 
-let tabla = document.querySelector("#tabla tbody")
+// CARGAR DATOS EN LA TABLA
+const tabla = document.querySelector("#tabla tbody")
 
-if(!tabla) return
+if(tabla){
 
-const querySnapshot = await getDocs(collection(db,"vehiculos"))
+const vehiculosRef = ref(db,"vehiculos")
 
-querySnapshot.forEach((docu)=>{
+onValue(vehiculosRef,(snapshot)=>{
 
-let data = docu.data()
+tabla.innerHTML=""
+
+snapshot.forEach((child)=>{
+
+let data = child.val()
+let id = child.key
 
 let fila = document.createElement("tr")
 
@@ -56,7 +66,7 @@ fila.innerHTML=`
 <td>${data.lugar}</td>
 <td>${data.runner}</td>
 <td>${data.hora}</td>
-<td><button onclick="eliminar('${docu.id}')">X</button></td>
+<td><button onclick="eliminar('${id}')">X</button></td>
 
 `
 
@@ -64,16 +74,16 @@ tabla.appendChild(fila)
 
 })
 
+})
+
 }
 
-async function eliminar(id){
 
-await deleteDoc(doc(db,"vehiculos",id))
+// ELIMINAR
+function eliminar(id){
 
-location.reload()
+remove(ref(db,"vehiculos/"+id))
 
 }
 
 window.eliminar = eliminar
-
-cargarDatos()
